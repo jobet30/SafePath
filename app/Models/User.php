@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
@@ -20,7 +19,8 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'password',
+        'password', // Keep this field for the raw password
+        'role', // Added role field
     ];
 
     /**
@@ -29,20 +29,46 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
-        'password',
+        'password', // Hide the raw password field
         'remember_token',
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Role Accessor to ensure it’s always cast as an enum value.
+     */
+    public function getRoleAttribute($value)
+    {
+        return ucfirst($value); // Capitalize the role value (e.g., 'admin' becomes 'Admin')
+    }
+
+    /**
+     * Mutator to ensure the password is hashed properly before saving.
+     */
+    public function setPasswordAttribute($value)
+    {
+        // Hash the password before saving it
+        if (!empty($value)) {
+            $this->attributes['password'] = Hash::make($value);
+        }
+    }
+
+    /**
+     * Check if the user has a specific role.
+     */
+    public function hasRole($role)
+    {
+        return $this->role === ucfirst($role);
     }
 }
